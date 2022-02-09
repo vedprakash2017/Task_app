@@ -2,16 +2,18 @@ const express  = require('express')
 const route = express.Router()
 const Task = require('../model/task')
 const auth = require('../middleware/auth')
+const redisClient  = require('../db/redis-db')
+const { redisTaskHandler }   = require('./redisFunction')
+const mongoose = require('mongoose')
 
 //manipulating single task 
-
 route.post('/task' , auth , async (req ,res)=>{
-
     let task = req.body
     task['assigned_to'] = req.user._id
     try{
         task = new Task(task)
         await task.save()
+        await redisClient.lPush(req.user.id , JSON.stringify(task))
         res.status(201).send(task)
     }
     catch(e){
@@ -21,20 +23,21 @@ route.post('/task' , auth , async (req ,res)=>{
 
 
 route.get('/task/:id' , auth , async (req, res)=>{
-    const id = req.params.id
+    const task_id = req.params.id
     try{
-        const task  = await Task.findById(id)
+        // const task  = await Task.findById(task_id)
+        const task = await redisTaskHandler('get' , req.user._id , task_id)
         if(!task)
             return res.status(404).send()
         res.send(task)
     }
     catch(e){
-        res.status(400).send()
+        res.status(400).send(e)
     }
 })
 
 route.patch('/task/:id' , auth , async (req, res)=>{
-    const id = req.params.id
+    const task_id = req.params.id
     
     const updates = req.body
     const updatesKeys = Object.keys(updates)
@@ -51,23 +54,28 @@ route.patch('/task/:id' , auth , async (req, res)=>{
         
     try{
         // find task by id and update it with given data
-        const task = await Task.findById(id)
+        // const task1 = await Task.findById(task_id)
+        let task  = await redisTaskHandler('get' , req.user._id , task_id)
         updatesKeys.map((key)=>{
             task[key]  = updates[key]
         })
 
-        await task.save()
+        const x = await redisTaskHandler('update' , req.user._id , task_id , task)
+
+        task = Task(task)
+        await Task.updateOne({_id:task._id} , task)
         res.send(task)
     }
     catch(e){
-        res.status(400).send()
+        res.status(400).send(e)
     }
 })
 
 route.delete('/task/:id' ,auth ,  async (req, res )=>{
-    const id = req.params.id
+    const task_id = req.params.id
     try{
-        const task = await Task.findByIdAndRemove(id)
+        await Task.findByIdAndRemove(task_id)
+        const  task = await redisTaskHandler('delete' , req.user._id , task_id)
         if(!task)
             return res.status(404).send()
         res.send(task)
@@ -77,12 +85,13 @@ route.delete('/task/:id' ,auth ,  async (req, res )=>{
     }
 })
 
-// manipulating all user task
+// manipulating all current user task
 
 route.get('/user/task' ,auth,  async (req, res)=>{
     try{
-        await req.user.populate({path:'tasks'})
-        res.send(req.user.tasks)
+        // await req.user.populate({path:'tasks'})
+        const tasks  = await redisTaskHandler('all' ,req.user._id)
+        res.send(tasks)
     }
     catch(e)
     {
@@ -94,7 +103,8 @@ route.get('/user/task' ,auth,  async (req, res)=>{
 route.delete('/user/task' , auth ,  async (req , res)=>{
 
     try{
-        const tasks = await Task.deleteMany({assigned_to:req.user._id})
+        await Task.deleteMany({assigned_to:req.user._id})
+        const tasks = await redisTaskHandler('delete_all')
         if(!tasks)
             return res.status(500).send()
 
@@ -107,7 +117,7 @@ route.delete('/user/task' , auth ,  async (req , res)=>{
 })
 
 
-// get all tasks or delete all tasks of all users
+// get all tasks or delete all tasks of all users from mongodb ( only for testing )
 
 route.get('/tasks/all' , async (req, res)=>{
     try{

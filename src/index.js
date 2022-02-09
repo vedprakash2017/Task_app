@@ -4,6 +4,7 @@ const app = express()
 const port = process.env.PORT
 
 require('./db/mongo')
+
 app.use(express.static('./public'))
 app.use(express.json())
 

@@ -50,7 +50,29 @@ route.get('/user/logout', auth , async (req, res)=>{
     }
 })
 
-//delete user
+//get current user details
+route.get('/user/me' , auth , async (req, res)=>{
+    try{
+        // await req.user.populate({path:"groups"})
+        // await req.user.populate({path:'tasks'})
+
+        await req.user.populate({path:"groups"})
+        await req.user.populate({path:"tasks"})
+        
+        let user = req.user
+        if(!user)
+            return res.status(500).send()
+        const groups = req.user.groups
+        const tasks = req.user.tasks
+        res.send({user, groups, tasks})
+    }
+    catch(e)
+    {
+        res.status(400).send()
+    }
+})
+
+//delete current  user
 route.delete('/user/delete' ,  auth, async (req, res)=>{
     try{
         const user = await User.findByIdAndRemove({_id:req.user._id})
