@@ -1,23 +1,16 @@
-const Group = require("../src/model/group");
-const request = require("supertest");
-const Task = require("../src/model/task");
-const app = require("../src/app");
-const {
-  setUpDb,
-  userOne,
-  taskFour,
-  groupOne,
-  groupTwo,
-  groupThree,
-} = require("./extra/db");
+import Group from "../src/model/group";
+import request from "supertest";
+import Task from "../src/model/task";
+import app from "../src/app";
+import db from "./extra/db";
 const User = require("../src/model/user");
 
-beforeEach(setUpDb);
+beforeEach(db.setUpDb);
 
 test("create a new group without any task", async () => {
   const res = await request(app)
     .post("/group")
-    .set("Authorization", `Bearer ${userOne.token[0]}`)
+    .set("Authorization", `Bearer ${db.userOne.token[0]}`)
     .send({
       name: "new group",
     })
@@ -26,13 +19,13 @@ test("create a new group without any task", async () => {
   expect(group).not.toBeNull();
 });
 test("create a new group with a task", async () => {
-  console.log(taskFour);
+  console.log(db.taskFour);
   const res = await request(app)
     .post("/group")
-    .set("Authorization", `Bearer ${userOne.token[0]}`)
+    .set("Authorization", `Bearer ${db.userOne.token[0]}`)
     .send({
       name: "new group",
-      tasks: [taskFour._id.toString()],
+      tasks: [db.taskFour._id.toString()],
     })
     .expect(201);
   const group = await Group.findById(res.body._id);
@@ -44,28 +37,28 @@ test("create a new group without auth", async () => {
     .post("/task")
     .send({
       name: "new group",
-      tasks: [taskFour._id.toString()],
+      tasks: [db.taskFour._id.toString()],
     })
     .expect(401);
 });
 
 test("get a group", async () => {
   const res = await request(app)
-    .get(`/group/${groupTwo._id}`)
-    .set("Authorization", `Bearer ${userOne.token[0]}`)
+    .get(`/group/${db.groupTwo._id}`)
+    .set("Authorization", `Bearer ${db.userOne.token[0]}`)
     .send()
     .expect(200);
   const group = await Group.findById(res.body[0].group_id);
   expect(group).not.toBeNull();
 });
 test("get a group without auth", async () => {
-  await request(app).get(`/group/${groupOne._id}`).send().expect(401);
+  await request(app).get(`/group/${db.groupOne._id}`).send().expect(401);
 });
 
 test("update a group", async () => {
   const res = await request(app)
-    .patch(`/group/${groupTwo._id}`)
-    .set("Authorization", `Bearer ${userOne.token[0]}`)
+    .patch(`/group/${db.groupTwo._id}`)
+    .set("Authorization", `Bearer ${db.userOne.token[0]}`)
     .send({
       is_completed: true,
     })
@@ -74,19 +67,19 @@ test("update a group", async () => {
   expect(task.is_completed).toBe(true);
 });
 test("update task without auth", async () => {
-  await request(app).patch(`/group/${groupTwo._id}`).send().expect(401);
+  await request(app).patch(`/group/${db.groupTwo._id}`).send().expect(401);
 });
 
 test("Delete a group", async () => {
   const res = await request(app)
-    .delete(`/group/${groupTwo._id}`)
-    .set("Authorization", `Bearer ${userOne.token[0]}`)
+    .delete(`/group/${db.groupTwo._id}`)
+    .set("Authorization", `Bearer ${db.userOne.token[0]}`)
     .send()
     .expect(200);
 });
 test("Delete task without auth", async () => {
   await request(app)
-    .delete(`/group/${groupOne._id}`)
+    .delete(`/group/${db.groupOne._id}`)
     .send({
       text: "clean your room",
     })

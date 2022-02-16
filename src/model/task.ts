@@ -1,6 +1,6 @@
-import * as mongoose from 'mongoose'
+import Mongoose from 'mongoose'
 
-const schema  = new mongoose.Schema({
+const schema  = new Mongoose.Schema({
     text:{
         type:String,
         required:true,
@@ -14,16 +14,16 @@ const schema  = new mongoose.Schema({
         default:false
     },
     assigned_to:{
-        type:mongoose.Types.ObjectId,
+        type:Mongoose.Types.ObjectId,
         ref:'user',
         required:true
     },
     group_id:{
-        type:mongoose.Types.ObjectId,
+        type:Mongoose.Types.ObjectId,
         // unique:true    
     }
 })
 
-const Task = mongoose.model('task', schema)
+const Task = Mongoose.model('task', schema)
 
 export default Task;

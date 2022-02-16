@@ -1,7 +1,7 @@
-import * as mongoose from  'mongoose';
+import Mongoose from  'mongoose';
 const  uri=  (process.env.URI)
 //@ts-ignore
-mongoose.connect( uri , (err , _res)=>{
+Mongoose.connect( uri , (err , _res)=>{
     if(err)
         console.log('error to connected to mongdb!',err)
     else

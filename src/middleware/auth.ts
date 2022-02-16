@@ -2,7 +2,7 @@ import * as jwt  from 'jsonwebtoken'
 import User from '../model/user'
 let privateKey = process.env.privateKey
 import { NextFunction, Request, Response } from 'express'
-import { customRequest, UserType } from '../@types/module'
+import {  UserType } from '../@types/module'
 const checkAuth = async (req:Request,res:Response ,next:NextFunction)=>{
     try{
 
@@ -30,11 +30,6 @@ const checkAuth = async (req:Request,res:Response ,next:NextFunction)=>{
         {
             throw new Error("Invalid Login")
         }
-        interface temp extends Request{
-            user:UserType,
-            token:string
-        }
-        req as temp
         res.locals.user = user
         res.locals.token = token
     next()

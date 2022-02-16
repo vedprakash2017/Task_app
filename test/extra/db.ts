@@ -1,69 +1,100 @@
-const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
+import Mongoose from "mongoose";
+import * as jwt from "jsonwebtoken";
+import User from "../../src/model/user";
+import Task from "../../src/model/task";
+import Group from "../../src/model/group";
+import redisClient from "../../src/db/redis-db";
+
 const privateKey = process.env.privateKey;
-const User = require("../../src/model/user");
-const Task = require("../../src/model/task");
-const Group = require("../../src/model/group");
-const redisClient = require("../../src/db/redis-db");
+
+
 const id = () => {
-  return new mongoose.Types.ObjectId();
+  return new Mongoose.Types.ObjectId();
 };
-const userId1 = new mongoose.Types.ObjectId();
-const userId2 = new mongoose.Types.ObjectId();
-const userOne = {
+const userId1 = new Mongoose.Types.ObjectId();
+const userId2 = new Mongoose.Types.ObjectId();
+
+interface userType {
+  _id: Mongoose.Types.ObjectId,
+  username:string,
+  password:string|number,
+  token: Array<string>
+}
+
+const userOne:userType = {
   _id: userId1,
   username: "ved",
   password: 12345678,
-  token: [jwt.sign({ _id: userId1 }, privateKey)],
+  token: [jwt.sign({ _id: userId1 }, privateKey!)],
 };
 
-const userTwo = {
+const userTwo:userType = {
   _id: userId2,
   username: "sonu",
   password: "sonusonu",
-  token: [jwt.sign({ _id: userId2 }, privateKey)],
+  token: [jwt.sign({ _id: userId2 }, privateKey!)],
 };
 
-const taskOne = {
+
+
+interface taskType {
+  _id: Mongoose.Types.ObjectId,
+  text:string,
+  is_completed:Boolean,
+  assigned_to:string,
+  [key:string]:any
+}
+
+const taskOne:taskType = {
   _id: id(),
   text: "task one",
   is_completed: false,
   assigned_to: userOne._id.toString(),
 };
-const taskTwo = {
+const taskTwo:taskType = {
   _id: id(),
   text: "task two",
   is_completed: false,
   assigned_to: userOne._id.toString(),
 };
-const taskThree = {
+const taskThree:taskType = {
   _id: id(),
   text: "task three",
   is_completed: false,
   assigned_to: userTwo._id.toString(),
 };
-const taskFour = {
+const taskFour:taskType = {
   _id: id(),
   text: "task Four",
   is_completed: false,
   assigned_to: userOne._id.toString(),
 };
 
-const groupOne = {
+
+
+interface groupType {
+  _id: Mongoose.Types.ObjectId,
+  name:string,
+  assigned_to:string,
+  tasks: Array<string>,
+  __v:Number
+}
+
+const groupOne:groupType = {
   name: "group 1",
   tasks: [],
   assigned_to: userOne._id.toString(),
   _id: id(),
   __v: 0,
 };
-const groupTwo = {
+const groupTwo:groupType = {
   name: "group 2",
   tasks: [taskOne._id.toString(), taskTwo._id.toString()],
   assigned_to: userOne._id.toString(),
   _id: id(),
   __v: 0,
 };
-const groupThree = {
+const groupThree:groupType = {
   name: "group 3",
   tasks: [taskThree._id.toString()],
   assigned_to: userTwo._id.toString(),
@@ -121,7 +152,7 @@ const setUpDb = async () => {
   ]);
 };
 
-module.exports = {
+export default {
   userTwo,
   userOne,
   taskOne,

@@ -2,7 +2,7 @@ import { GroupDocument, TaskDocument, TaskModel, TaskType } from "../@types/modu
 import redisClient from "../db/redis-db";
 import Task from "../model/task"
 
-let redisTaskHandler = async (condition:string, user_id:string, task_id:string | undefined , updated_task:Array<String>|undefined) => {
+let redisTaskHandler = async (condition:string, user_id:string|undefined, task_id:string | undefined , updated_task:Array<String>|undefined) => {
   let tasksData = await redisClient.lRange(user_id, 0, -1); //getting all task for current user
   let tasks = tasksData.map((task:string) => JSON.parse(task)); // parse them in object
 
@@ -50,13 +50,17 @@ let redisTaskHandler = async (condition:string, user_id:string, task_id:string |
   return tasks;
 };
 
-const redisGroupHandler = async (condition:string, user_id:string, group_id:string, update_ids:Array<String>) => {
+const redisGroupHandler = async (condition:string, user_id:string|undefined, group_id:string|undefined, update_ids:Array<String>|undefined) => {
 
   let tasks = await redisTaskHandler("all", user_id , undefined , undefined);
 
   if (condition === "create") {
     let tasks_u = tasks.map((task:TaskDocument) => {
+      if(update_ids === undefined)
+        throw new Error()
       if (update_ids.includes(task._id)) {
+        if(group_id === undefined)
+        throw new Error()
         task["group_id"] = group_id;
       }
       let temp = new Task(task)

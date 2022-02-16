@@ -5,15 +5,11 @@ import auth from "../middleware/auth";
 import User from "../model/user";
 import { ObjectId } from "mongodb";
 import redisClient from "../db/redis-db";
-import  redisGroupHandler  from "./redisFunction";
+import  redisHandler  from "./redisFunction";
 import {Request , Response } from 'express';
 
 let route =  express.Router();
 
-interface UserType{
-  _id:string,
-
-}
 
 route.get("/group/all", async (req:Request, res:Response) => {
   try {
@@ -24,30 +20,20 @@ route.get("/group/all", async (req:Request, res:Response) => {
   }
 });
 
-// manipulating group of tasks by group id
-interface userType {
-  nom: String,
-  prenom: String,
-}
-
-interface CustomRequest<T> extends Request {
-  body:T,
-  user:T
-}
-route.post("/group", auth, async (req:CustomRequest<userType>, res:Response) => {
+route.post("/group", auth, async (req:Request , res:Response) => {
 
   let tasks = req.body;
   let currentUser:{_id:string }
-  currentUser = req.user
-  // let req.user:{_id:string}
-  tasks["assigned_to"] = req.user._id;
+  currentUser = res.locals.user
+  // let res.locals.user:{_id:string}
+  tasks["assigned_to"] = res.locals.user._id;
 
   try {
     const group = new Group(tasks);
     let ids = group.tasks;
     //checking group name is valid or not
     const matchGroup = await Group.find({
-      assigned_to: req.user._id,
+      assigned_to: res.locals.user._id,
       name: group.name,
     });
 
@@ -56,13 +42,13 @@ route.post("/group", auth, async (req:CustomRequest<userType>, res:Response) => 
 
     if (ids.length > 0) {
       //checking  all ids are valid or not
-      const allTasks = await Task.find({ assigned_to: req.user._id }); // getting all current user tasks
+      const allTasks = await Task.find({ assigned_to: res.locals.user._id }); // getting all current user tasks
 
       const allTasksId = allTasks.map((task) => {
         // extract all task ids
         return task._id.toString();
       });
-      const check = ids.every((id) => {
+      const check = ids.every((id:string) => {
         // check if all req json ids match with user task id or not
         return allTasksId.includes(id);
       });
@@ -87,16 +73,16 @@ route.post("/group", auth, async (req:CustomRequest<userType>, res:Response) => 
       if (tasks.modifiedCount === 0) return res.status(500).send();
 
       // in redis database
-      await redisGroupHandler(
+      await redisHandler.redisGroupHandler(
         "create",
-        req.user._id,
+        res.locals.user._id,
         group._id.toString(),
         ids
       );
     }
 
     await group.save();
-    await redisClient.lPush(req.user._id + ":group", JSON.stringify(group));
+    await redisClient.lPush(res.locals.user._id + ":group", JSON.stringify(group));
     res.status(201).send(group);
   } catch (e) {
     res.status(400).send(e);
@@ -106,10 +92,11 @@ route.post("/group", auth, async (req:CustomRequest<userType>, res:Response) => 
 route.get("/group/:group_id", auth, async (req, res) => {
   try {
     // const tasks = await Task.find({group_id})
-    const tasks = await redisGroupHandler(
+    const tasks = await redisHandler.redisGroupHandler(
       "get",
-      req.user._id,
-      req.params.group_id
+      res.locals.user._id,
+      req.params.group_id,
+      undefined
     );
     if (!tasks) return res.status(404).send();
     res.send(tasks);
@@ -118,12 +105,13 @@ route.get("/group/:group_id", auth, async (req, res) => {
   }
 });
 
-route.patch("/group/:group_id", auth, async (req:Response, res:Request) => {
+route.patch("/group/:group_id", auth, async (req:Request, res:Response) => {
   try {
-    const tasks = await redisGroupHandler(
+    const tasks = await redisHandler.redisGroupHandler(
       "update",
-      req.user._id,
-      req.params.group_id
+      res.locals.user._id,
+      req.params.group_id,
+      undefined
     );
     await Task.updateMany(
       { group_id: req.params.group_id },
@@ -139,14 +127,15 @@ route.patch("/group/:group_id", auth, async (req:Response, res:Request) => {
 route.delete("/group/:group_id", auth, async (req:Request, res:Response) => {
   const group_id = req.params.group_id;
   try {
-    const deletedTasks = await redisGroupHandler(
+    const deletedTasks = await redisHandler.redisGroupHandler(
       "delete",
-      req.user._id,
-      req.params.group_id
+      res.locals.user._id,
+      req.params.group_id,
+      undefined
     );
     const group = await Group.deleteOne({
       _id: group_id,
-      assigned_to: req.user._id,
+      assigned_to: res.locals.user._id,
     });
     const tasks = await Task.deleteMany({ group_id });
 
@@ -157,4 +146,5 @@ route.delete("/group/:group_id", auth, async (req:Request, res:Response) => {
   }
 });
 
-export default route;
+
+module.exports = route;

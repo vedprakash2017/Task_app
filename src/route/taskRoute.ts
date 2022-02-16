@@ -5,27 +5,27 @@ import auth from "../middleware/auth"
 import redisClient from "../db/redis-db"
 import  redisHandler  from "./redisFunction"
 import * as mongoose from "mongoose"
-import { customRequest, UserDocument } from "../@types/module"
-
+import { UserDocument } from "../@types/module"
+import {Request , Response} from 'express'
 //manipulating single task
-route.post("/task", auth, async (req:customRequest, res) => {
+route.post("/task", auth, async (req:Request, res:Response) => {
   let task = req.body;
-  task["assigned_to"] = req.user._id;
+  task["assigned_to"] = res.locals.user._id;
   try {
     task = new Task(task);
     await task.save();
-    await redisClient.lPush(req.user.id, JSON.stringify(task));
+    await redisClient.lPush(res.locals.user.id, JSON.stringify(task));
     res.status(201).send(task);
   } catch (e) {
     res.status(400).send(e);
   }
 });
 
-route.get("/task/:id", auth, async (req:customRequest, res) => {
+route.get("/task/:id", auth, async (req:Request, res) => {
   const task_id = req.params.id;
   try {
     // const task  = await Task.findById(task_id)
-    const task = await redisHandler.redisTaskHandler("get", req.user._id, task_id , undefined);
+    const task = await redisHandler.redisTaskHandler("get", res.locals.user._id, task_id , undefined);
     if (!task) return res.status(404).send();
     res.send(task);
   } catch (e) {
@@ -33,7 +33,7 @@ route.get("/task/:id", auth, async (req:customRequest, res) => {
   }
 });
 
-route.patch("/task/:id", auth, async (req:customRequest, res) => {
+route.patch("/task/:id", auth, async (req:Request, res) => {
   const task_id = req.params.id;
 
   const updates = req.body;
@@ -49,12 +49,12 @@ route.patch("/task/:id", auth, async (req:customRequest, res) => {
   try {
     // find task by id and update it with given data
     // const task1 = await Task.findById(task_id)
-    let task = await redisHandler.redisTaskHandler("get", req.user._id, task_id , undefined);
+    let task = await redisHandler.redisTaskHandler("get", res.locals.user._id, task_id , undefined);
     updatesKeys.map((key) => {
       task[key] = updates[key];
     });
 
-    const x = await redisHandler.redisTaskHandler("update", req.user._id, task_id, task);
+    const x = await redisHandler.redisTaskHandler("update", res.locals.user._id, task_id, task);
 
     task = new Task(task);
     await Task.updateOne({ _id: task._id }, task);
@@ -64,11 +64,11 @@ route.patch("/task/:id", auth, async (req:customRequest, res) => {
   }
 });
 
-route.delete("/task/:id", auth, async (req:customRequest, res) => {
+route.delete("/task/:id", auth, async (req:Request, res) => {
   const task_id = req.params.id;
   try {
     await Task.findByIdAndRemove(task_id);
-    const task = await redisHandler.redisTaskHandler("delete", req.user._id, task_id , undefined);
+    const task = await redisHandler.redisTaskHandler("delete", res.locals.user._id, task_id , undefined);
     if (!task) return res.status(404).send();
     res.send(task);
   } catch (e) {
@@ -78,19 +78,19 @@ route.delete("/task/:id", auth, async (req:customRequest, res) => {
 
 // manipulating all current user task
 
-route.get("/user/task", auth, async (req:customRequest, res) => {
+route.get("/user/task", auth, async (req:Request, res) => {
   try {
-    // await req.user.populate({path:'tasks'})
-    const tasks = await redisHandler.redisTaskHandler("all", req.user._id , undefined , undefined);
+    // await res.locals.user.populate({path:'tasks'})
+    const tasks = await redisHandler.redisTaskHandler("all", res.locals.user._id , undefined , undefined);
     res.send(tasks);
   } catch (e) {
     res.status(400).send();
   }
 });
 
-route.delete("/user/task", auth, async (req:customRequest, res) => {
+route.delete("/user/task", auth, async (req:Request, res) => {
   try {
-    await Task.deleteMany({ assigned_to: req.user._id });
+    await Task.deleteMany({ assigned_to: res.locals.user._id });
     const tasks = await redisHandler.redisTaskHandler("delete_all" , undefined , undefined , undefined);
     if (!tasks) return res.status(500).send();
 
@@ -124,4 +124,4 @@ route.delete("/tasks/all", async (req, res) => {
   }
 });
 
-export default route;
+module.exports =  route;

@@ -1,8 +1,10 @@
-import * as express from "express";
+import express from "express";
 
 const app = express();
+
 require("./db/mongo");
 require("./db/redis-db");
+
 app.use(express.static("./public"));
 app.use(express.json());
 

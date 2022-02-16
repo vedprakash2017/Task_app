@@ -1,6 +1,6 @@
-import * as mongoose from 'mongoose'
+import  Mongoose from 'mongoose'
 
-const schema = new mongoose.Schema({
+const schema = new Mongoose.Schema({
     name:{
         type:String,
         required:true,
@@ -11,12 +11,12 @@ const schema = new mongoose.Schema({
         // required:true
     }],
     assigned_to:{
-        type:mongoose.Types.ObjectId,
+        type:Mongoose.Types.ObjectId,
         ref:'user',
         required:true
     }
 })
 
-const Group = mongoose.model('group' , schema)
+const Group = Mongoose.model('group' , schema)
 
 export default Group;

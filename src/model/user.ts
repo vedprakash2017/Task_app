@@ -2,6 +2,7 @@ import * as mongoose from "mongoose"
 import * as bcrypt from "bcrypt"
 import * as jwt from "jsonwebtoken"
 import Task from "./task"
+import { UserDocument, UserModel , UserType } from "../@types/module";
 const privatekey = process.env.privateKey;
 const schema = new mongoose.Schema({
   username: {
@@ -60,19 +61,19 @@ schema.methods.getToken = async function () {
   return token;
 };
 
-schema.statics.findByCred = async (username, password) => {
+schema.statics.findByCred = async (username:string, password:string):Promise<UserDocument|null> => {
   try {
-    const user = await User.findOne({ username });
+    let user:UserDocument|null = await User.findOne({ username });
     if (!user) throw new Error("Invalid username or password!");
 
-    const isMatched = await bcrypt.compare(password.toString(), user.password);
+    const isMatched = await bcrypt.compare(password.toString(), user.password.toString());
 
     if (!isMatched) throw new Error("Not able to login");
 
     return user;
   } catch (e) {
     console.log(e);
-    return 0;
+    return null;
   }
 };
 schema.pre("save", async function (next) {
@@ -86,6 +87,6 @@ schema.pre("remove", async function (next) {
   await Task.deleteMany({ assigned_to: user._id });
   next();
 });
-const User = mongoose.model("user", schema);
+const User = mongoose.model<UserDocument>("user", schema);
 
 export default User;
