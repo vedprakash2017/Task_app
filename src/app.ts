@@ -1,4 +1,4 @@
-const express = require("express");
+import * as express from "express";
 
 const app = express();
 require("./db/mongo");
@@ -14,4 +14,4 @@ app.use(taskRoute);
 app.use(groupRoute);
 app.use(userRoute);
 
-module.exports = app;
+export default app;

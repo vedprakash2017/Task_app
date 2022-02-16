@@ -1,13 +1,14 @@
-const express = require("express");
-const route = express.Router();
-const Task = require("../model/task");
-const auth = require("../middleware/auth");
-const redisClient = require("../db/redis-db");
-const { redisTaskHandler } = require("./redisFunction");
-const mongoose = require("mongoose");
+import * as express from "express"
+const route = express.Router()
+import Task from "../model/task"
+import auth from "../middleware/auth"
+import redisClient from "../db/redis-db"
+import  redisHandler  from "./redisFunction"
+import * as mongoose from "mongoose"
+import { customRequest, UserDocument } from "../@types/module"
 
 //manipulating single task
-route.post("/task", auth, async (req, res) => {
+route.post("/task", auth, async (req:customRequest, res) => {
   let task = req.body;
   task["assigned_to"] = req.user._id;
   try {
@@ -20,11 +21,11 @@ route.post("/task", auth, async (req, res) => {
   }
 });
 
-route.get("/task/:id", auth, async (req, res) => {
+route.get("/task/:id", auth, async (req:customRequest, res) => {
   const task_id = req.params.id;
   try {
     // const task  = await Task.findById(task_id)
-    const task = await redisTaskHandler("get", req.user._id, task_id);
+    const task = await redisHandler.redisTaskHandler("get", req.user._id, task_id , undefined);
     if (!task) return res.status(404).send();
     res.send(task);
   } catch (e) {
@@ -32,7 +33,7 @@ route.get("/task/:id", auth, async (req, res) => {
   }
 });
 
-route.patch("/task/:id", auth, async (req, res) => {
+route.patch("/task/:id", auth, async (req:customRequest, res) => {
   const task_id = req.params.id;
 
   const updates = req.body;
@@ -48,14 +49,14 @@ route.patch("/task/:id", auth, async (req, res) => {
   try {
     // find task by id and update it with given data
     // const task1 = await Task.findById(task_id)
-    let task = await redisTaskHandler("get", req.user._id, task_id);
+    let task = await redisHandler.redisTaskHandler("get", req.user._id, task_id , undefined);
     updatesKeys.map((key) => {
       task[key] = updates[key];
     });
 
-    const x = await redisTaskHandler("update", req.user._id, task_id, task);
+    const x = await redisHandler.redisTaskHandler("update", req.user._id, task_id, task);
 
-    task = Task(task);
+    task = new Task(task);
     await Task.updateOne({ _id: task._id }, task);
     res.send(task);
   } catch (e) {
@@ -63,11 +64,11 @@ route.patch("/task/:id", auth, async (req, res) => {
   }
 });
 
-route.delete("/task/:id", auth, async (req, res) => {
+route.delete("/task/:id", auth, async (req:customRequest, res) => {
   const task_id = req.params.id;
   try {
     await Task.findByIdAndRemove(task_id);
-    const task = await redisTaskHandler("delete", req.user._id, task_id);
+    const task = await redisHandler.redisTaskHandler("delete", req.user._id, task_id , undefined);
     if (!task) return res.status(404).send();
     res.send(task);
   } catch (e) {
@@ -77,20 +78,20 @@ route.delete("/task/:id", auth, async (req, res) => {
 
 // manipulating all current user task
 
-route.get("/user/task", auth, async (req, res) => {
+route.get("/user/task", auth, async (req:customRequest, res) => {
   try {
     // await req.user.populate({path:'tasks'})
-    const tasks = await redisTaskHandler("all", req.user._id);
+    const tasks = await redisHandler.redisTaskHandler("all", req.user._id , undefined , undefined);
     res.send(tasks);
   } catch (e) {
     res.status(400).send();
   }
 });
 
-route.delete("/user/task", auth, async (req, res) => {
+route.delete("/user/task", auth, async (req:customRequest, res) => {
   try {
     await Task.deleteMany({ assigned_to: req.user._id });
-    const tasks = await redisTaskHandler("delete_all");
+    const tasks = await redisHandler.redisTaskHandler("delete_all" , undefined , undefined , undefined);
     if (!tasks) return res.status(500).send();
 
     res.send(tasks);
@@ -123,4 +124,4 @@ route.delete("/tasks/all", async (req, res) => {
   }
 });
 
-module.exports = route;
+export default route;

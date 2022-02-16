@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const Task = require("./task");
+import * as mongoose from "mongoose"
+import * as bcrypt from "bcrypt"
+import * as jwt from "jsonwebtoken"
+import Task from "./task"
 const privatekey = process.env.privateKey;
 const schema = new mongoose.Schema({
   username: {
@@ -44,6 +44,11 @@ schema.methods.toJSON = function () {
 schema.methods.getToken = async function () {
   const user = this;
   const id = user._id.toString();
+  if(process.env.privateKey === undefined)
+  {
+
+    throw new Error("invlaid!");
+  }
   const token = await jwt.sign({ _id: id }, process.env.privateKey);
   user.token.push(token);
 
@@ -83,4 +88,4 @@ schema.pre("remove", async function (next) {
 });
 const User = mongoose.model("user", schema);
 
-module.exports = User;
+export default User;

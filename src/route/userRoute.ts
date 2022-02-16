@@ -1,7 +1,7 @@
-const express = require("express");
-const User = require("../model/user");
-const route = express.Router();
-const auth = require("../middleware/auth");
+import express from "express";
+import User from "../model/user";
+import route = express.Router();
+import auth from "../middleware/auth";
 
 // user signup, login and logout
 route.post("/user/signup", async (req, res) => {
@@ -88,4 +88,4 @@ route.delete("/user/all", async (req, res) => {
     res.status(400).send(e);
   }
 });
-module.exports = route;
+export default route;
