@@ -1,15 +1,18 @@
 import * as express from "express";
 import User from "../model/user";
+import { UserDocument } from "../@types/module";
 const route = express.Router();
 import auth from "../middleware/auth";
-
+import kafka from "../db/kafka";
 // user signup, login and logout
 route.post("/user/signup", async (req, res) => {
   let user = req.body;
   try {
     user = new User(user);
     const token = await user.getToken();
-    await user.save();
+
+    await kafka.producer.sendMessage({data:user , type:'user'});
+    // await user.save();
     res.status(201).send({ user, token });
   } catch (e) {
     res.status(400).send(e);
@@ -32,7 +35,9 @@ route.get("/user/logout", auth, async (req, res) => {
     res.locals.user.token = res.locals.user.token.filter((tok:string) => {
       return tok != res.locals.token;
     });
-    await res.locals.user.save();
+
+    await kafka.producer.sendMessage({data:res.locals.user , type:'user'});
+    // await res.locals.user.save();
     res.send(res.locals.user);
   } catch (e) {
     res.status(400).send();

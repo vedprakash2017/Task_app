@@ -7,6 +7,8 @@ import { ObjectId } from "mongodb";
 import redisClient from "../db/redis-db";
 import  redisHandler  from "./redisFunction";
 import {Request , Response } from 'express';
+import kafka from '../db/kafka'
+import { TaskDocument } from "../@types/module";
 
 let route =  express.Router();
 
@@ -44,7 +46,7 @@ route.post("/group", auth, async (req:Request , res:Response) => {
       //checking  all ids are valid or not
       const allTasks = await Task.find({ assigned_to: res.locals.user._id }); // getting all current user tasks
 
-      const allTasksId = allTasks.map((task) => {
+      const allTasksId = allTasks.map((task:TaskDocument) => {
         // extract all task ids
         return task._id.toString();
       });
@@ -56,7 +58,7 @@ route.post("/group", auth, async (req:Request , res:Response) => {
         return res.status(500).send("Please provide valid tasks");
       }
       //checking if any task added in any group previously
-      const firstTime = allTasks.every((task) => {
+      const firstTime = allTasks.every((task:TaskDocument) => {
         if (ids.includes(task._id.toString()) && task.group_id) return 0;
         else return 1;
       });
@@ -81,7 +83,8 @@ route.post("/group", auth, async (req:Request , res:Response) => {
       );
     }
 
-    await group.save();
+    await kafka.producer.sendMessage({data:group , type:'group'});
+    // await group.save();
     await redisClient.lPush(res.locals.user._id + ":group", JSON.stringify(group));
     res.status(201).send(group);
   } catch (e) {

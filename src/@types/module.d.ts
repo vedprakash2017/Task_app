@@ -2,6 +2,7 @@ import { Request } from 'express';
 import { Document, Model, Mongoose } from "mongoose";
 import * as mongoose from 'mongoose'
 
+
 export interface UserType {
   username: string,
   password: string|Number,
@@ -41,3 +42,9 @@ export interface TaskModel extends Model<TaskDocument> {}
 
 export interface GroupDocument extends GroupType, Document {}
 export interface GroupModel extends Model<GroupDocument> {}
+
+
+export interface messageKafka{
+  data: UserDocument|GroupDocument|TaskDocument,
+  type: string
+}

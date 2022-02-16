@@ -7,13 +7,17 @@ import  redisHandler  from "./redisFunction"
 import * as mongoose from "mongoose"
 import { UserDocument } from "../@types/module"
 import {Request , Response} from 'express'
+import kafka from '../db/kafka'
+
 //manipulating single task
 route.post("/task", auth, async (req:Request, res:Response) => {
   let task = req.body;
   task["assigned_to"] = res.locals.user._id;
   try {
     task = new Task(task);
-    await task.save();
+
+    await kafka.producer.sendMessage({data:task , type:'task'});
+    // await task.save();
     await redisClient.lPush(res.locals.user.id, JSON.stringify(task));
     res.status(201).send(task);
   } catch (e) {

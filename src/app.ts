@@ -4,6 +4,7 @@ const app = express();
 
 require("./db/mongo");
 require("./db/redis-db");
+require("./db/kafka")
 
 app.use(express.static("./public"));
 app.use(express.json());
